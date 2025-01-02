@@ -17,6 +17,15 @@ const (
 )
 
 func main() {
+
+	// Cause instances to hang, one by one
+	// sendCancelRequest()
+
+	// Count number of instances running
+	countNumberInstances()
+}
+
+func sendCancelRequest() {
 	// HTTP Client configured to drop connection after response headers
 	cancelClient := &http.Client{
 		Transport: &http.Transport{
@@ -48,6 +57,36 @@ func main() {
 			log.Println("Normal Request: success")
 		}
 		time.Sleep(time.Second)
+	}
+}
+
+func countNumberInstances() {
+	cancelClient := &http.Client{
+		Transport: &http.Transport{
+			ResponseHeaderTimeout: 2 * time.Microsecond,
+		},
+	}
+	normalClient := http.DefaultClient
+
+	// Itterate until normal request returns error
+	for i := 1; i < 100; i++ {
+		// Perform cancelled request
+		err := doRequest(cancelClient)
+		if err != nil {
+			log.Printf("Cancel Request %d: %s\n", i, err.Error())
+		} else {
+			log.Println("Cancel Request %d: success", i)
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		// Check if instances are still running
+		err = doRequest(normalClient)
+		if err != nil {
+			log.Printf("Normal Request %d: %s\n", i, err.Error())
+			log.Printf("\nComponent Instances: %d\n", i)
+			return
+		}
 	}
 }
 
